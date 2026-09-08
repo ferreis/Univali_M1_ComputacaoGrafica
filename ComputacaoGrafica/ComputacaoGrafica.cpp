@@ -120,7 +120,6 @@ void keyboard(unsigned char key, int, int) {
         std::exit(0);
         break;
 
-    // Rotacao no eixo X.
     case 'w':
     case 'W':
         rotacionar(cubo, PASSO_ROTACAO, 0.0, 0.0);
@@ -130,7 +129,6 @@ void keyboard(unsigned char key, int, int) {
         rotacionar(cubo, -PASSO_ROTACAO, 0.0, 0.0);
         break;
 
-    // Rotacao no eixo Y.
     case 'a':
     case 'A':
         rotacionar(cubo, 0.0, -PASSO_ROTACAO, 0.0);
@@ -140,7 +138,6 @@ void keyboard(unsigned char key, int, int) {
         rotacionar(cubo, 0.0, PASSO_ROTACAO, 0.0);
         break;
 
-    // Rotacao no eixo Z.
     case 'q':
     case 'Q':
         rotacionar(cubo, 0.0, 0.0, PASSO_ROTACAO);
@@ -150,7 +147,6 @@ void keyboard(unsigned char key, int, int) {
         rotacionar(cubo, 0.0, 0.0, -PASSO_ROTACAO);
         break;
 
-    // Escala uniforme nos tres eixos.
     case '+':
     case '=':
         escalar(cubo, FATOR_ESCALA, FATOR_ESCALA, FATOR_ESCALA);
@@ -160,14 +156,12 @@ void keyboard(unsigned char key, int, int) {
         escalar(cubo, 1.0 / FATOR_ESCALA, 1.0 / FATOR_ESCALA, 1.0 / FATOR_ESCALA);
         break;
 
-    // Ativa ou desativa as cores das faces.
     case 'f':
     case 'F':
         coresAtivadas = !coresAtivadas;
-        std::cout << "Cores: " << (coresAtivadas ? "ativadas" : "desativadas") << '\n';
+        std::cout << "Faces coloridas: " << (coresAtivadas ? "ativadas" : "desativadas") << '\n';
         break;
 
-    // Volta o cubo para o estado inicial.
     case 'r':
     case 'R':
         cubo = criar_cubo(0.0, 0.0, -6.0, 2.0);
@@ -216,7 +210,6 @@ Poligono criar_cubo(double centro_x, double centro_y, double centro_z, double ta
 
     const double metade = tamanho_lado / 2.0;
 
-    // Oito vertices do cubo descritos diretamente em torno do centro.
     novo_poligono.vertices = {
         {centro_x - metade, centro_y - metade, centro_z - metade}, // 0
         {centro_x + metade, centro_y - metade, centro_z - metade}, // 1
@@ -228,15 +221,12 @@ Poligono criar_cubo(double centro_x, double centro_y, double centro_z, double ta
         {centro_x - metade, centro_y + metade, centro_z + metade}  // 7
     };
 
-    // Doze arestas unicas do cubo.
     novo_poligono.arestas = {
         {0, 1}, {1, 2}, {2, 3}, {3, 0},
         {4, 5}, {5, 6}, {6, 7}, {7, 4},
         {0, 4}, {1, 5}, {2, 6}, {3, 7}
     };
 
-    // Seis faces. As cores servem apenas para diferenciar visualmente os lados;
-    // o desenho continua sendo exclusivamente das arestas com GL_LINES.
     novo_poligono.faces = {
         {{0, 1, 2, 3}, {1.0f, 0.15f, 0.15f}}, // Traseira - vermelho
         {{4, 5, 6, 7}, {0.15f, 0.35f, 1.0f}}, // Frontal  - azul
@@ -250,7 +240,6 @@ Poligono criar_cubo(double centro_x, double centro_y, double centro_z, double ta
 }
 
 void movimentar(Poligono& poligono, double deslocamento_x, double deslocamento_y, double deslocamento_z) {
-    // A translacao e calculada diretamente, sem glTranslate.
     poligono.posicao.x += deslocamento_x;
     poligono.posicao.y += deslocamento_y;
     poligono.posicao.z += deslocamento_z;
@@ -263,8 +252,6 @@ void movimentar(Poligono& poligono, double deslocamento_x, double deslocamento_y
 }
 
 void escalar(Poligono& poligono, double escala_x, double escala_y, double escala_z) {
-    // Cada vertice e convertido para coordenadas relativas ao centro, escalado
-    // e colocado novamente no espaco. Assim o centro do cubo permanece fixo.
     for (Vertice& vertice : poligono.vertices) {
         vertice.x = poligono.posicao.x + (vertice.x - poligono.posicao.x) * escala_x;
         vertice.y = poligono.posicao.y + (vertice.y - poligono.posicao.y) * escala_y;
@@ -289,24 +276,20 @@ void rotacionar(Poligono& poligono, double angulo_x, double angulo_y, double ang
     const double sin_z = std::sin(radianos_z);
 
     for (Vertice& vertice : poligono.vertices) {
-        // Trabalha sempre em relacao ao centro do poligono.
         double x = vertice.x - poligono.posicao.x;
         double y = vertice.y - poligono.posicao.y;
         double z = vertice.z - poligono.posicao.z;
 
-        // Rotacao no eixo X.
         double novo_y = y * cos_x - z * sin_x;
         double novo_z = y * sin_x + z * cos_x;
         y = novo_y;
         z = novo_z;
 
-        // Rotacao no eixo Y.
         double novo_x = x * cos_y + z * sin_y;
         novo_z = -x * sin_y + z * cos_y;
         x = novo_x;
         z = novo_z;
 
-        // Rotacao no eixo Z.
         novo_x = x * cos_z - y * sin_z;
         novo_y = x * sin_z + y * cos_z;
         x = novo_x;
@@ -324,29 +307,32 @@ void rotacionar(Poligono& poligono, double angulo_x, double angulo_y, double ang
 
 void desenhar(const Poligono& poligono) {
     if (coresAtivadas) {
-        // Cada face recebe uma cor diferente. Como o trabalho exige wireframe,
-        // somente as quatro arestas de cada face sao enviadas ao GL_LINES.
+        // Preenche cada uma das seis faces com uma cor diferente.
+        // O deslocamento de profundidade evita que as linhas pretas das arestas
+        // disputem o mesmo pixel das faces preenchidas.
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.0f, 1.0f);
+
         for (const Face& face : poligono.faces) {
             glColor3f(face.cor.r, face.cor.g, face.cor.b);
+            glBegin(GL_QUADS);
 
-            glBegin(GL_LINES);
-            for (int i = 0; i < 4; ++i) {
-                const int indice_origem = face.vertices[i];
-                const int indice_destino = face.vertices[(i + 1) % 4];
-                const Vertice& origem = poligono.vertices[indice_origem];
-                const Vertice& destino = poligono.vertices[indice_destino];
-
-                glVertex3d(origem.x, origem.y, origem.z);
-                glVertex3d(destino.x, destino.y, destino.z);
+            for (int indice : face.vertices) {
+                const Vertice& vertice = poligono.vertices[indice];
+                glVertex3d(vertice.x, vertice.y, vertice.z);
             }
+
             glEnd();
         }
-        return;
+
+        glDisable(GL_POLYGON_OFFSET_FILL);
     }
 
-    // Com as cores desativadas, desenha cada aresta uma unica vez em preto.
+    // As doze arestas continuam sendo desenhadas com GL_LINES.
+    // Quando F desativa as faces, sobra somente o wireframe exigido no enunciado.
     glColor3f(0.0f, 0.0f, 0.0f);
     glBegin(GL_LINES);
+
     for (const aresta& linha : poligono.arestas) {
         const Vertice& origem = poligono.vertices[linha.first];
         const Vertice& destino = poligono.vertices[linha.second];
@@ -354,6 +340,7 @@ void desenhar(const Poligono& poligono) {
         glVertex3d(origem.x, origem.y, origem.z);
         glVertex3d(destino.x, destino.y, destino.z);
     }
+
     glEnd();
 }
 
@@ -370,7 +357,7 @@ void imprimir_controles() {
         << "  A/D                : rotacionar no eixo Y\n"
         << "  Q/E                : rotacionar no eixo Z\n"
         << "  +/-                : aumentar/diminuir escala\n"
-        << "  F                  : ativar/desativar cores\n"
+        << "  F                  : ativar/desativar faces coloridas\n"
         << "  R                  : restaurar cubo\n"
         << "  Esc                : sair\n";
 }
