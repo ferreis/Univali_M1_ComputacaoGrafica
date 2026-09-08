@@ -1,6 +1,9 @@
+#include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <GL/freeglut.h>
 #include <vector>
+
 using vertice = std::pair<double, double>;
 using lista_vertices = std::vector<vertice>;
 using aresta = std::pair<int, int>;
@@ -64,7 +67,7 @@ void keyboard(unsigned char key, int x, int y) {
 	std::cout << key;
 	switch (key) {
 	case 27:
-		exit(0);
+		std::exit(0);
 		break;
 	case ' ':
 		escalar(pentagono, 1.1, 1.1);
@@ -114,7 +117,7 @@ Poligono criar_poligono(double posicao_x, double posicao_y, double tamanho_lado,
 	float angulo = 0;
 	float passo_angulo = ((360 / float(num_lados)) * 3.1415926536) / 180.0;
 
-	float apothem = tamanho_lado / (2 * tan(3.1416 / float(num_lados)));
+	float apothem = tamanho_lado / (2 * std::tan(3.1416 / float(num_lados)));
 	posicao_x -= tamanho_lado / 2.0;
 	posicao_y -= apothem;
 
@@ -122,8 +125,8 @@ Poligono criar_poligono(double posicao_x, double posicao_y, double tamanho_lado,
 	std::cout << "Vertices:\n";
 	std::cout << 0 << " - " << posicao_x << " - " << posicao_y << "\n";
 	for (int i = 1; i < num_lados; i++) {
-		posicao_x = posicao_x + tamanho_lado * cos(angulo);
-		posicao_y = posicao_y + tamanho_lado * sin(angulo);
+		posicao_x = posicao_x + tamanho_lado * std::cos(angulo);
+		posicao_y = posicao_y + tamanho_lado * std::sin(angulo);
 		novo_poligono.vertices.push_back(vertice(posicao_x, posicao_y));
 		std::cout << i << " - " << posicao_x << " - " << posicao_y << "\n";
 		angulo += passo_angulo;
