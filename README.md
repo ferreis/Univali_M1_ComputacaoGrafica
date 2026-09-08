@@ -8,16 +8,29 @@ O projeto pode ser aberto e compilado normalmente pelo VS Code no Windows e no L
 
 Foram adicionados scripts que configuram o CMake, compilam e executam o projeto automaticamente.
 
-### Linux
+### Linux - Ubuntu/Debian
 
-Primeiro instale as dependencias:
+Basta executar:
+
+```bash
+./run.sh
+```
+
+O script verifica e instala automaticamente, quando necessario, as dependencias:
+
+- `cmake`
+- `build-essential`
+- `libglut-dev`
+- `libgl1-mesa-dev`
+
+Se preferir instalar manualmente:
 
 ```bash
 sudo apt update
-sudo apt install build-essential cmake freeglut3-dev libgl1-mesa-dev
+sudo apt install cmake build-essential libglut-dev libgl1-mesa-dev
 ```
 
-Depois, na raiz do projeto:
+Depois, execute novamente:
 
 ```bash
 ./run.sh
@@ -55,16 +68,7 @@ Ao abrir a pasta do projeto no VS Code, instale as extensoes recomendadas pelo w
 
 O CMake Tools configura o IntelliSense, a compilacao e a depuracao a partir do `CMakeLists.txt` da raiz.
 
-### Linux - Ubuntu/Debian
-
-Instale as dependencias:
-
-```bash
-sudo apt update
-sudo apt install build-essential cmake freeglut3-dev libgl1-mesa-dev
-```
-
-Depois:
+### Linux
 
 1. Clone o repositorio e abra a pasta raiz no VS Code.
 2. Quando o CMake Tools pedir um Kit, selecione o GCC/G++ instalado no sistema.
