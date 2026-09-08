@@ -1,3 +1,4 @@
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -10,9 +11,21 @@ struct Vertice {
     double z;
 };
 
+struct Cor {
+    float r;
+    float g;
+    float b;
+};
+
+struct Face {
+    std::array<int, 4> vertices;
+    Cor cor;
+};
+
 using lista_vertices = std::vector<Vertice>;
 using aresta = std::pair<int, int>;
 using lista_arestas = std::vector<aresta>;
+using lista_faces = std::vector<Face>;
 
 struct Poligono {
     double tamanhoLado;
@@ -21,6 +34,7 @@ struct Poligono {
     Vertice rotacao;
     lista_vertices vertices;
     lista_arestas arestas;
+    lista_faces faces;
 };
 
 constexpr double PI = 3.14159265358979323846;
@@ -42,6 +56,7 @@ void imprimir_controles();
 double graus_para_radianos(double graus);
 
 Poligono cubo;
+bool coresAtivadas = true;
 
 int main(int argc, char** argv) {
     cubo = criar_cubo(0.0, 0.0, -6.0, 2.0);
@@ -145,6 +160,13 @@ void keyboard(unsigned char key, int, int) {
         escalar(cubo, 1.0 / FATOR_ESCALA, 1.0 / FATOR_ESCALA, 1.0 / FATOR_ESCALA);
         break;
 
+    // Ativa ou desativa as cores das faces.
+    case 'f':
+    case 'F':
+        coresAtivadas = !coresAtivadas;
+        std::cout << "Cores: " << (coresAtivadas ? "ativadas" : "desativadas") << '\n';
+        break;
+
     // Volta o cubo para o estado inicial.
     case 'r':
     case 'R':
@@ -206,11 +228,22 @@ Poligono criar_cubo(double centro_x, double centro_y, double centro_z, double ta
         {centro_x - metade, centro_y + metade, centro_z + metade}  // 7
     };
 
-    // Doze arestas: quatro de cada face paralela e quatro ligando as faces.
+    // Doze arestas unicas do cubo.
     novo_poligono.arestas = {
         {0, 1}, {1, 2}, {2, 3}, {3, 0},
         {4, 5}, {5, 6}, {6, 7}, {7, 4},
         {0, 4}, {1, 5}, {2, 6}, {3, 7}
+    };
+
+    // Seis faces. As cores servem apenas para diferenciar visualmente os lados;
+    // o desenho continua sendo exclusivamente das arestas com GL_LINES.
+    novo_poligono.faces = {
+        {{0, 1, 2, 3}, {1.0f, 0.15f, 0.15f}}, // Traseira - vermelho
+        {{4, 5, 6, 7}, {0.15f, 0.35f, 1.0f}}, // Frontal  - azul
+        {{0, 3, 7, 4}, {0.10f, 0.70f, 0.25f}}, // Esquerda - verde
+        {{1, 2, 6, 5}, {1.0f, 0.55f, 0.05f}}, // Direita  - laranja
+        {{3, 2, 6, 7}, {0.65f, 0.20f, 0.85f}}, // Superior - roxo
+        {{0, 1, 5, 4}, {0.05f, 0.70f, 0.75f}}  // Inferior - ciano
     };
 
     return novo_poligono;
@@ -290,9 +323,29 @@ void rotacionar(Poligono& poligono, double angulo_x, double angulo_y, double ang
 }
 
 void desenhar(const Poligono& poligono) {
-    glColor3f(0.0f, 0.0f, 0.0f);
+    if (coresAtivadas) {
+        // Cada face recebe uma cor diferente. Como o trabalho exige wireframe,
+        // somente as quatro arestas de cada face sao enviadas ao GL_LINES.
+        for (const Face& face : poligono.faces) {
+            glColor3f(face.cor.r, face.cor.g, face.cor.b);
 
-    // O cubo e desenhado somente pelas arestas, conforme solicitado.
+            glBegin(GL_LINES);
+            for (int i = 0; i < 4; ++i) {
+                const int indice_origem = face.vertices[i];
+                const int indice_destino = face.vertices[(i + 1) % 4];
+                const Vertice& origem = poligono.vertices[indice_origem];
+                const Vertice& destino = poligono.vertices[indice_destino];
+
+                glVertex3d(origem.x, origem.y, origem.z);
+                glVertex3d(destino.x, destino.y, destino.z);
+            }
+            glEnd();
+        }
+        return;
+    }
+
+    // Com as cores desativadas, desenha cada aresta uma unica vez em preto.
+    glColor3f(0.0f, 0.0f, 0.0f);
     glBegin(GL_LINES);
     for (const aresta& linha : poligono.arestas) {
         const Vertice& origem = poligono.vertices[linha.first];
@@ -317,6 +370,7 @@ void imprimir_controles() {
         << "  A/D                : rotacionar no eixo Y\n"
         << "  Q/E                : rotacionar no eixo Z\n"
         << "  +/-                : aumentar/diminuir escala\n"
+        << "  F                  : ativar/desativar cores\n"
         << "  R                  : restaurar cubo\n"
         << "  Esc                : sair\n";
 }
