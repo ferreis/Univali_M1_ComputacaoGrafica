@@ -1,164 +1,363 @@
+#include <array>
+#include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <GL/freeglut.h>
 #include <vector>
-using vertice = std::pair<double, double>;
-using lista_vertices = std::vector<vertice>;
-using aresta = std::pair<int, int>;
-using lista_arestas = std::vector<aresta>;
 
-struct Poligono {
-	double tamanhoLado;
-	int numLados;
-	vertice posicao;
-	vertice escala;
-	double rotacao;
-	lista_vertices vertices;
-	lista_arestas arestas;
+struct Vertice {
+    double x;
+    double y;
+    double z;
 };
 
-Poligono criar_poligono(double posicao_x, double posicao_y, double tamanho_lado, int num_lados);
-void desenhar(Poligono poligono);
-void movimentar(Poligono& poligono, double distancia, double angulo);
-void escalar(Poligono& poligono, double escala_x, double escala_y);
-void rotacionar(Poligono& poligono, double angulo);
+struct Cor {
+    float r;
+    float g;
+    float b;
+};
+
+struct Face {
+    std::array<int, 4> vertices;
+    Cor cor;
+};
+
+using lista_vertices = std::vector<Vertice>;
+using aresta = std::pair<int, int>;
+using lista_arestas = std::vector<aresta>;
+using lista_faces = std::vector<Face>;
+
+struct Poligono {
+    double tamanhoLado;
+    Vertice posicao;
+    Vertice escala;
+    Vertice rotacao;
+    lista_vertices vertices;
+    lista_arestas arestas;
+    lista_faces faces;
+};
+
+constexpr double PI = 3.14159265358979323846;
+constexpr double PASSO_MOVIMENTO = 0.25;
+constexpr double PASSO_ROTACAO = 5.0;
+constexpr double FATOR_ESCALA = 1.10;
+
+Poligono criar_cubo(double centro_x, double centro_y, double centro_z, double tamanho_lado);
+void desenhar(const Poligono& poligono);
+void movimentar(Poligono& poligono, double deslocamento_x, double deslocamento_y, double deslocamento_z);
+void escalar(Poligono& poligono, double escala_x, double escala_y, double escala_z);
+void rotacionar(Poligono& poligono, double angulo_x, double angulo_y, double angulo_z);
 void display();
-void redraw(int value);
+void reshape(int largura, int altura);
 void keyboard(unsigned char key, int x, int y);
 void keyboard_special(int key, int x, int y);
+void imprimir_controles();
 
-Poligono pentagono;
-int delay = 10;
+double graus_para_radianos(double graus);
+
+Poligono cubo;
+bool coresAtivadas = true;
 
 int main(int argc, char** argv) {
+    cubo = criar_cubo(0.0, 0.0, -6.0, 2.0);
 
-	pentagono = criar_poligono(128, 128, 30, 5);
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitWindowSize(800, 600);
+    glutCreateWindow("Trabalho M1 - Cubo 3D");
 
-	glutInit(&argc, argv);
+    glClearColor(1.0, 1.0, 1.0, 1.0);
+    glEnable(GL_DEPTH_TEST);
+    glLineWidth(2.0f);
 
-	glutInitWindowSize(512, 512);
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutKeyboardFunc(keyboard);
+    glutSpecialFunc(keyboard_special);
 
-	glutCreateWindow("Desenhando uma linha");
-	glClearColor(1.0, 1.0, 1.0, 1.0);
-	glOrtho(0, 256, 0, 256, -1, 1);
+    imprimir_controles();
+    glutMainLoop();
 
-	glutDisplayFunc(display);
-	glutKeyboardFunc(keyboard);
-	glutSpecialFunc(keyboard_special);
-	glutTimerFunc(10, redraw, 0);
-
-	glutMainLoop();
-
-	return 0;
+    return 0;
 }
 
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-void display(void) {
-	glClear(GL_COLOR_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
-	desenhar(pentagono);
+    desenhar(cubo);
 
-	glFlush();
+    glutSwapBuffers();
 }
 
-void keyboard(unsigned char key, int x, int y) {
-	std::cout << key;
-	switch (key) {
-	case 27:
-		exit(0);
-		break;
-	case ' ':
-		escalar(pentagono, 1.1, 1.1);
-		break;
-	}
+void reshape(int largura, int altura) {
+    if (altura == 0) {
+        altura = 1;
+    }
+
+    const double proporcao = static_cast<double>(largura) / static_cast<double>(altura);
+    const double plano_proximo = 1.0;
+    const double plano_distante = 100.0;
+    const double campo_visao = 60.0;
+    const double topo = std::tan(graus_para_radianos(campo_visao / 2.0)) * plano_proximo;
+    const double direita = topo * proporcao;
+
+    glViewport(0, 0, largura, altura);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glFrustum(-direita, direita, -topo, topo, plano_proximo, plano_distante);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
-void keyboard_special(int key, int x, int y) {
-	std::cout << key;
-	switch (key) {
-	case GLUT_KEY_DOWN:
-		movimentar(pentagono, 10, (270 / 180.0) * 3.1416);
-		break;
+void keyboard(unsigned char key, int, int) {
+    switch (key) {
+    case 27: // Esc
+        std::exit(0);
+        break;
 
-	case GLUT_KEY_UP:
-		movimentar(pentagono, 10, (90 / 180.0) * 3.1416);
-		break;
+    case 'w':
+    case 'W':
+        rotacionar(cubo, PASSO_ROTACAO, 0.0, 0.0);
+        break;
+    case 's':
+    case 'S':
+        rotacionar(cubo, -PASSO_ROTACAO, 0.0, 0.0);
+        break;
 
-	case GLUT_KEY_RIGHT:
-		movimentar(pentagono, 10, (0 / 180.0) * 3.1416);
-		break;
+    case 'a':
+    case 'A':
+        rotacionar(cubo, 0.0, -PASSO_ROTACAO, 0.0);
+        break;
+    case 'd':
+    case 'D':
+        rotacionar(cubo, 0.0, PASSO_ROTACAO, 0.0);
+        break;
 
-	case GLUT_KEY_LEFT:
-		movimentar(pentagono, 10, (180 / 180.0) * 3.1416);
-		break;
+    case 'q':
+    case 'Q':
+        rotacionar(cubo, 0.0, 0.0, PASSO_ROTACAO);
+        break;
+    case 'e':
+    case 'E':
+        rotacionar(cubo, 0.0, 0.0, -PASSO_ROTACAO);
+        break;
 
-	}
+    case '+':
+    case '=':
+        escalar(cubo, FATOR_ESCALA, FATOR_ESCALA, FATOR_ESCALA);
+        break;
+    case '-':
+    case '_':
+        escalar(cubo, 1.0 / FATOR_ESCALA, 1.0 / FATOR_ESCALA, 1.0 / FATOR_ESCALA);
+        break;
+
+    case 'f':
+    case 'F':
+        coresAtivadas = !coresAtivadas;
+        std::cout << "Faces coloridas: " << (coresAtivadas ? "ativadas" : "desativadas") << '\n';
+        break;
+
+    case 'r':
+    case 'R':
+        cubo = criar_cubo(0.0, 0.0, -6.0, 2.0);
+        break;
+
+    default:
+        return;
+    }
+
+    glutPostRedisplay();
 }
 
-void redraw(int value) {
-	glutPostRedisplay();
-	glutTimerFunc(delay, redraw, 0);
+void keyboard_special(int key, int, int) {
+    switch (key) {
+    case GLUT_KEY_LEFT:
+        movimentar(cubo, -PASSO_MOVIMENTO, 0.0, 0.0);
+        break;
+    case GLUT_KEY_RIGHT:
+        movimentar(cubo, PASSO_MOVIMENTO, 0.0, 0.0);
+        break;
+    case GLUT_KEY_UP:
+        movimentar(cubo, 0.0, PASSO_MOVIMENTO, 0.0);
+        break;
+    case GLUT_KEY_DOWN:
+        movimentar(cubo, 0.0, -PASSO_MOVIMENTO, 0.0);
+        break;
+    case GLUT_KEY_PAGE_UP:
+        movimentar(cubo, 0.0, 0.0, PASSO_MOVIMENTO);
+        break;
+    case GLUT_KEY_PAGE_DOWN:
+        movimentar(cubo, 0.0, 0.0, -PASSO_MOVIMENTO);
+        break;
+    default:
+        return;
+    }
+
+    glutPostRedisplay();
 }
 
-Poligono criar_poligono(double posicao_x, double posicao_y, double tamanho_lado, int num_lados) {
-	Poligono novo_poligono;
-	novo_poligono.numLados = num_lados;
-	novo_poligono.posicao.first = posicao_x;
-	novo_poligono.posicao.second = posicao_y;
-	novo_poligono.tamanhoLado = tamanho_lado;
+Poligono criar_cubo(double centro_x, double centro_y, double centro_z, double tamanho_lado) {
+    Poligono novo_poligono;
+    novo_poligono.tamanhoLado = tamanho_lado;
+    novo_poligono.posicao = {centro_x, centro_y, centro_z};
+    novo_poligono.escala = {1.0, 1.0, 1.0};
+    novo_poligono.rotacao = {0.0, 0.0, 0.0};
 
-	novo_poligono.escala.first = 1;
-	novo_poligono.escala.second = 1;
+    const double metade = tamanho_lado / 2.0;
 
-	novo_poligono.rotacao = 0;
+    novo_poligono.vertices = {
+        {centro_x - metade, centro_y - metade, centro_z - metade}, // 0
+        {centro_x + metade, centro_y - metade, centro_z - metade}, // 1
+        {centro_x + metade, centro_y + metade, centro_z - metade}, // 2
+        {centro_x - metade, centro_y + metade, centro_z - metade}, // 3
+        {centro_x - metade, centro_y - metade, centro_z + metade}, // 4
+        {centro_x + metade, centro_y - metade, centro_z + metade}, // 5
+        {centro_x + metade, centro_y + metade, centro_z + metade}, // 6
+        {centro_x - metade, centro_y + metade, centro_z + metade}  // 7
+    };
 
-	float angulo = 0;
-	float passo_angulo = ((360 / float(num_lados)) * 3.1415926536) / 180.0;
+    novo_poligono.arestas = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0},
+        {4, 5}, {5, 6}, {6, 7}, {7, 4},
+        {0, 4}, {1, 5}, {2, 6}, {3, 7}
+    };
 
-	float apothem = tamanho_lado / (2 * tan(3.1416 / float(num_lados)));
-	posicao_x -= tamanho_lado / 2.0;
-	posicao_y -= apothem;
+    novo_poligono.faces = {
+        {{0, 1, 2, 3}, {1.0f, 0.15f, 0.15f}}, // Traseira - vermelho
+        {{4, 5, 6, 7}, {0.15f, 0.35f, 1.0f}}, // Frontal  - azul
+        {{0, 3, 7, 4}, {0.10f, 0.70f, 0.25f}}, // Esquerda - verde
+        {{1, 2, 6, 5}, {1.0f, 0.55f, 0.05f}}, // Direita  - laranja
+        {{3, 2, 6, 7}, {0.65f, 0.20f, 0.85f}}, // Superior - roxo
+        {{0, 1, 5, 4}, {0.05f, 0.70f, 0.75f}}  // Inferior - ciano
+    };
 
-	novo_poligono.vertices.push_back(vertice(posicao_x, posicao_y));
-	std::cout << "Vertices:\n";
-	std::cout << 0 << " - " << posicao_x << " - " << posicao_y << "\n";
-	for (int i = 1; i < num_lados; i++) {
-		posicao_x = posicao_x + tamanho_lado * cos(angulo);
-		posicao_y = posicao_y + tamanho_lado * sin(angulo);
-		novo_poligono.vertices.push_back(vertice(posicao_x, posicao_y));
-		std::cout << i << " - " << posicao_x << " - " << posicao_y << "\n";
-		angulo += passo_angulo;
-	}
-
-	std::cout << "Arestas:\n";
-	for (int i = 0; i < num_lados; i++) {
-		novo_poligono.arestas.push_back(aresta(i, (i + 1) % num_lados));
-		std::cout << i << " - " << (i + 1) % num_lados << "\n";
-	}
-
-
-	return novo_poligono;
+    return novo_poligono;
 }
 
-void movimentar(Poligono& poligono, double distancia, double angulo) {
-	
+void movimentar(Poligono& poligono, double deslocamento_x, double deslocamento_y, double deslocamento_z) {
+    poligono.posicao.x += deslocamento_x;
+    poligono.posicao.y += deslocamento_y;
+    poligono.posicao.z += deslocamento_z;
+
+    for (Vertice& vertice : poligono.vertices) {
+        vertice.x += deslocamento_x;
+        vertice.y += deslocamento_y;
+        vertice.z += deslocamento_z;
+    }
 }
 
-void escalar(Poligono& poligono, double escala_x, double escala_y) {
-	
+void escalar(Poligono& poligono, double escala_x, double escala_y, double escala_z) {
+    for (Vertice& vertice : poligono.vertices) {
+        vertice.x = poligono.posicao.x + (vertice.x - poligono.posicao.x) * escala_x;
+        vertice.y = poligono.posicao.y + (vertice.y - poligono.posicao.y) * escala_y;
+        vertice.z = poligono.posicao.z + (vertice.z - poligono.posicao.z) * escala_z;
+    }
+
+    poligono.escala.x *= escala_x;
+    poligono.escala.y *= escala_y;
+    poligono.escala.z *= escala_z;
 }
 
-void rotacionar(Poligono& poligono, double angulo) {
+void rotacionar(Poligono& poligono, double angulo_x, double angulo_y, double angulo_z) {
+    const double radianos_x = graus_para_radianos(angulo_x);
+    const double radianos_y = graus_para_radianos(angulo_y);
+    const double radianos_z = graus_para_radianos(angulo_z);
 
+    const double cos_x = std::cos(radianos_x);
+    const double sin_x = std::sin(radianos_x);
+    const double cos_y = std::cos(radianos_y);
+    const double sin_y = std::sin(radianos_y);
+    const double cos_z = std::cos(radianos_z);
+    const double sin_z = std::sin(radianos_z);
+
+    for (Vertice& vertice : poligono.vertices) {
+        double x = vertice.x - poligono.posicao.x;
+        double y = vertice.y - poligono.posicao.y;
+        double z = vertice.z - poligono.posicao.z;
+
+        double novo_y = y * cos_x - z * sin_x;
+        double novo_z = y * sin_x + z * cos_x;
+        y = novo_y;
+        z = novo_z;
+
+        double novo_x = x * cos_y + z * sin_y;
+        novo_z = -x * sin_y + z * cos_y;
+        x = novo_x;
+        z = novo_z;
+
+        novo_x = x * cos_z - y * sin_z;
+        novo_y = x * sin_z + y * cos_z;
+        x = novo_x;
+        y = novo_y;
+
+        vertice.x = poligono.posicao.x + x;
+        vertice.y = poligono.posicao.y + y;
+        vertice.z = poligono.posicao.z + z;
+    }
+
+    poligono.rotacao.x += angulo_x;
+    poligono.rotacao.y += angulo_y;
+    poligono.rotacao.z += angulo_z;
 }
 
-void desenhar(Poligono poligono) {
-	glColor3f(0.0, 0.0, 0.0);
-	glBegin(GL_LINES);
-	for (int i = 0; i < poligono.arestas.size(); i++) {
-		float v_o = poligono.arestas[i].first;
-		float v_d = poligono.arestas[i].second;
-		glVertex2f(poligono.vertices[v_o].first, poligono.vertices[v_o].second);
-		glVertex2f(poligono.vertices[v_d].first, poligono.vertices[v_d].second);
-	}
-	glEnd();
+void desenhar(const Poligono& poligono) {
+    if (coresAtivadas) {
+        // Preenche cada uma das seis faces com uma cor diferente.
+        // O deslocamento de profundidade evita que as linhas pretas das arestas
+        // disputem o mesmo pixel das faces preenchidas.
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.0f, 1.0f);
+
+        for (const Face& face : poligono.faces) {
+            glColor3f(face.cor.r, face.cor.g, face.cor.b);
+            glBegin(GL_QUADS);
+
+            for (int indice : face.vertices) {
+                const Vertice& vertice = poligono.vertices[indice];
+                glVertex3d(vertice.x, vertice.y, vertice.z);
+            }
+
+            glEnd();
+        }
+
+        glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+
+    // As doze arestas continuam sendo desenhadas com GL_LINES.
+    // Quando F desativa as faces, sobra somente o wireframe exigido no enunciado.
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+
+    for (const aresta& linha : poligono.arestas) {
+        const Vertice& origem = poligono.vertices[linha.first];
+        const Vertice& destino = poligono.vertices[linha.second];
+
+        glVertex3d(origem.x, origem.y, origem.z);
+        glVertex3d(destino.x, destino.y, destino.z);
+    }
+
+    glEnd();
+}
+
+double graus_para_radianos(double graus) {
+    return graus * PI / 180.0;
+}
+
+void imprimir_controles() {
+    std::cout
+        << "Controles:\n"
+        << "  Setas             : mover em X/Y\n"
+        << "  Page Up/Page Down : mover em Z\n"
+        << "  W/S                : rotacionar no eixo X\n"
+        << "  A/D                : rotacionar no eixo Y\n"
+        << "  Q/E                : rotacionar no eixo Z\n"
+        << "  +/-                : aumentar/diminuir escala\n"
+        << "  F                  : ativar/desativar faces coloridas\n"
+        << "  R                  : restaurar cubo\n"
+        << "  Esc                : sair\n";
 }
