@@ -8,6 +8,18 @@ add_executable(ComputacaoGrafica
 
 target_compile_features(ComputacaoGrafica PRIVATE cxx_std_17)
 
+# Mantem o executavel no mesmo local em geradores single-config e multi-config.
+set_target_properties(ComputacaoGrafica PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
+
+foreach(CONFIG Debug Release RelWithDebInfo MinSizeRel)
+    string(TOUPPER "${CONFIG}" CONFIG_UPPER)
+    set_target_properties(ComputacaoGrafica PROPERTIES
+        "RUNTIME_OUTPUT_DIRECTORY_${CONFIG_UPPER}" "${CMAKE_BINARY_DIR}/bin"
+    )
+endforeach()
+
 if(WIN32)
     set(FREEGLUT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/ComputacaoGrafica/freeglut")
 

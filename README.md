@@ -4,6 +4,48 @@ Trabalho universitario de Computacao Grafica desenvolvido em C++ com OpenGL e Fr
 
 O projeto pode ser aberto e compilado normalmente pelo VS Code no Windows e no Linux usando CMake. A solucao do Visual Studio continua disponivel para quem preferir usa-la.
 
+## Execucao rapida
+
+Foram adicionados scripts que configuram o CMake, compilam e executam o projeto automaticamente.
+
+### Linux
+
+Primeiro instale as dependencias:
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake freeglut3-dev libgl1-mesa-dev
+```
+
+Depois, na raiz do projeto:
+
+```bash
+./run.sh
+```
+
+O `run.sh` ja esta marcado como executavel no repositorio. Se o sistema remover essa permissao por algum motivo, tambem pode ser executado com:
+
+```bash
+bash run.sh
+```
+
+### Windows
+
+Instale:
+
+- CMake disponivel no `PATH`;
+- Visual Studio Build Tools 2019/2022 ou Visual Studio com a carga de trabalho **Desenvolvimento para Desktop com C++**.
+
+Depois, na raiz do projeto, execute:
+
+```bat
+run.bat
+```
+
+Tambem e possivel dar duplo clique em `run.bat` pelo Explorador de Arquivos.
+
+Os dois scripts geram os arquivos em `build/` e executam o binario em `build/bin/`.
+
 ## VS Code
 
 Ao abrir a pasta do projeto no VS Code, instale as extensoes recomendadas pelo workspace:
@@ -35,7 +77,7 @@ Tambem e possivel compilar pelo terminal:
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
-./build/ComputacaoGrafica
+./build/bin/ComputacaoGrafica
 ```
 
 ### Windows
@@ -56,15 +98,13 @@ Depois:
 4. Execute `CMake: Build`.
 5. Use `CMake: Run Without Debugging` para executar ou `CMake: Debug` para depurar.
 
-Pelo terminal do Developer PowerShell/Prompt do Visual Studio:
+Pelo terminal:
 
 ```powershell
 cmake -S . -B build
 cmake --build build --config Debug
-.\build\Debug\ComputacaoGrafica.exe
+.\build\bin\ComputacaoGrafica.exe
 ```
-
-Dependendo do gerador escolhido pelo CMake, o executavel pode ficar diretamente em `build` em vez de `build\Debug`.
 
 ## Visual Studio
 
@@ -85,6 +125,8 @@ A configuracao original tambem continua disponivel:
 ```text
 .
 ├── CMakeLists.txt
+├── run.sh
+├── run.bat
 ├── ComputacaoGrafica.sln
 ├── ComputacaoGrafica/
 │   ├── ComputacaoGrafica.cpp
