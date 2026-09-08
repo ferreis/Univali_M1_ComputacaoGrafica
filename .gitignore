@@ -1,0 +1,42 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+
+# Build outputs
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+/x64/
+/x86/
+/Win32/
+/out/
+/bin/
+/obj/
+/ComputacaoGrafica/x64/
+/ComputacaoGrafica/bin/
+/ComputacaoGrafica/obj/
+/ComputacaoGrafica/freeglut.dll
+
+# C/C++ generated files
+*.aps
+*.ipch
+*.ilk
+*.pdb
+*.obj
+*.tlog
+*.lastbuildstate
+*.log
+*.recipe
+
+# CMake and tooling files
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+compile_commands.json
+
+# Operating system files
+.DS_Store
+Thumbs.db
